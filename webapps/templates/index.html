@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Hi</title>
+    <!--
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='js/contrib/jquery-ui-1.11.4.custom/jquery-ui.css') }}" />
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='js/contrib/jquery-ui-1.11.4.custom/jquery-ui.structure.css') }}" />
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='js/contrib/jquery-ui-1.11.4.custom/jquery-ui.theme.css') }}" />
+ -->
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/style.css') }}" />
+    <!-- <script type="text/javascript" src="{{ url_for('static', filename='js/contrib/jquery-1.11.3.js') }}"></script> -->
+    <!-- <script   src="https://code.jquery.com/jquery-1.12.4.min.js"   integrity="sha256-ZosEbRLbNQzLpnKIkEdrPv7lOy9C27hHQ+Xp8a4MxAQ="   crossorigin="anonymous"></script> -->
+    <script src="https://code.jquery.com/jquery-2.2.4.min.js" integrity="sha256-BbhdlvQf/xTY9gja0Dq3HiwQF8LaCRTXxZKRutelT44=" crossorigin="anonymous"></script>
+    <!-- <script type="text/javascript" src="{{ url_for('static', filename='contrib/jquery-ui-1.12.1/external/jquery/jquery.js') }}"></script> -->
+    <script type="text/javascript" src="{{ url_for('static', filename='contrib/jquery-ui-1.12.1/jquery-ui.min.js') }}"></script>
+    <script type="text/javascript" src="{{ url_for('static', filename='contrib/jquery.debounce.js') }}"></script>
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='contrib/jquery-ui-1.12.1/jquery-ui.min.css') }}" />
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='contrib/jquery-ui-1.12.1/jquery-ui.theme.min.css') }}" />
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='contrib/jquery-ui-1.12.1/jquery-ui.structure.min.css') }}" />
+    <!-- <script type="text/javascript" src="{{ url_for('static', filename='js/contrib/jquery-ui-1.11.4.custom/jquery-ui.js') }}"></script> -->
+    <!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.1.1/socket.io.slim.js"></script> -->
+    <script type="text/javascript">
+    var OPTIONS = {{ options | safe }};
+    var AJAX_LOADER = "{{ url_for('static', filename='ajax-loader.gif') }}";
+    var USE_WS = {{ use_ws }};
+    var BACKUP_WEB_SOCKET_URL = "{{ url_for('backup_web_socket')}}";
+    var MAP_PDF_URL = "{{ url_for('map_pdf_url')}}";
+    var CANVAS_PDF_URL = "{{ url_for('canvas_pdf_url')}}";
+
+    var GET_FIELD_URL = "{{ url_for('get_field')}}";
+    var BEST_MATCH_URL = "{{ url_for('best_match')}}";
+    </script>
+    <script type="text/javascript" src="{{ url_for('static', filename='js/constraints.js') }}"></script>
+    <script type="text/javascript" src="{{ url_for('static', filename='js/no_ws.js') }}"></script>
+    <script type="text/javascript" src="{{ url_for('static', filename='js/websocket.js') }}"></script>
+    <script type="text/javascript" src="{{ url_for('static', filename='js/analogues.js') }}"></script>
+</head>
+
+<body>
+    <div id='message'></div>
+    <table id='main'>
+        <tr>
+            <td><span  id="map-td">.</span><span  id="map-json">.</span>
+                <center><canvas width="400" height="400" id="map"></center>
+            </td>
+            <td><span  id="canvas-td">.</span>
+                <center>
+                    <canvas width="384" height="384" id="canvas"></canvas>
+                </center>
+            </td>
+            <td>
+                <table id="top-table">
+                    <tr>
+                        <td>
+                            <label for="tools">Tool:</label>
+                            <select id="tools"></select>
+                        </td>
+                        <td>
+                            <label for="min-value">Minimum value:</label>
+                            <input type="text" id="min-value" autocomplete="off">
+                            <span class='unit'></span>
+                        </td>
+                        <td>
+                            <label for="constaints">Constaints:</label>
+                            <input id="constaints" type="checkbox">Climatology
+                            <span  id="constraints-td">.</span>
+                        </td>
+                        <td>
+                            <input id="use-l2" type="checkbox">L2
+                            <input id="show-w" type="checkbox">W
+                            <select id="methods">
+                                 {% for k, v in methods.items() %}
+                                    <option value="{{ k }}">{{ v }}</option>
+                                    {% endfor %}
+                            </select>
+                                <select id="domains" name="domains">
+                                    {% for k, v in domains.items() %}
+                                    <option value="{{ k }}">{{ v.title }}</option>
+                                    {% endfor %}
+                                </select>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <label for="value">Value:</label>
+                            <input type="text" id="value" autocomplete="off">
+                            <span class='unit'></span>
+                        </td>
+                        <td>
+                            <label for="max-value">Maximum value:</label>
+                            <input type="text" id="max-value" autocomplete="off">
+                            <span class='unit'></span>
+                        </td>
+                        <td>
+                            <i>
+              Climatology (<span class='unit'></span>):<br>
+              Minimum: <span id='clim-min'></span><br>
+              Average: <span id='clim-mean'></span><br>
+              Maximum: <span id='clim-max'></span>
+              </i>
+                        </td>
+                        <td>
+                            <span id='websock'>WS</span>
+                        </td>
+                    </tr>
+                </table>
+                <div class="slider">
+                    <label for="radius-slider">Radius:</label>
+                    <div id="radius-slider"></div>
+                </div>
+                <div class="slider">
+                    <label for="pressure-slider">Pressure:</label>
+                    <div id="pressure-slider"></div>
+                </div>
+                <p>
+                    <table>
+                        <tr>
+                            <td colspan="2">
+                                <input type="button" value="Low" id="low">
+                                <input type="button" value="High" id="high">
+                                <input type="button" value="Ridge" id="ridge">
+                                <input type="button" value="Trough" id="trough">
+                                <input type="button" value="Min" id="min">
+                                <input type="button" value="Max" id="max">
+                                <input type="button" value="Median" id="median">
+                                <input type="button" value="Inverse" id="inverse">
+                                <input id="constant" type="button" value="Value">
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>
+                                <label for="user-date">Date:</label>
+                                <input type="date" name="user-date" id="user-date">
+                                <label for="regimes">Regimes:</label>
+                                <select id="regimes" name="regimes">
+                                    <option value="-">-</option>
+                                    {% for k, v in regimes.items() %}
+                                    <option value="{{ k }}">{{ v.title }}</option>
+                                    {% endfor %}
+                                </select>
+                                <label for="params">Parameters:</label>
+                                <select id="params" name="params">
+                                    {% for k, v in params.items() %}
+                                    <option value="{{ k }}">{{ v.title }}</option>
+                                    {% endfor %}
+                                </select>
+
+                            </td>
+                            <td>
+                                <center>
+                                    <img id="locked" width="128" height="128" class="locked-img">
+                </center>
+                                    <div class="slider">
+                                        <label for="weigths-slider">Weigths:</label>
+                                        <div id="weigths-slider"></div>
+                                    </div>
+                                                                <input id="two-fields" type="button" value="2nd field">
+
+                            </td>
+            </td>
+        </tr>
+    </table>
+    </td>
+    </tr>
+    <tr>
+        <td colspan="2">
+            <div class="slider">
+                <label for="date-clustering-slider">Date clustering: <span id='date-clustering'></span></label>
+                <div id="date-clustering-slider"></div>
+            </div>
+        </td>
+        <td>
+            <div id="help">
+                <p>Press shift-key to lower values.</p>
+            </div>
+        </td>
+    </tr>
+</table>
+<span  id="closest-td">.</span>
+<table>
+    <tr>
+        <td>
+            <center><img width="400" height="400" class="closest-img">
+                <div class="closest-label"></div>
+            </center>
+        </td>
+        <td>
+            <center><img width="400" height="400" class="closest-img">
+                <div class="closest-label"></div>
+            </center>
+        </td>
+        <td>
+            <center><img width="400" height="400" class="closest-img">
+                <div class="closest-label"></div>
+            </center>
+        </td>
+    </tr>
+    <tr>
+        <td>
+            <center><img width="400" height="400" class="closest-img">
+                <div class="closest-label"></div>
+            </center>
+        </td>
+        <td>
+            <center><img width="400" height="400" class="closest-img">
+                <div class="closest-label"></div>
+            </center>
+        </td>
+        <td>
+            <center><img width="400" height="400" class="closest-img">
+                <div class="closest-label"></div>
+            </center>
+        </td>
+    </tr>
+    <tr>
+        <td>
+            <center><img width="400" height="400" class="closest-img">
+                <div class="closest-label"></div>
+            </center>
+        </td>
+        <td>
+            <center><img width="400" height="400" class="closest-img">
+                <div class="closest-label"></div>
+            </center>
+        </td>
+        <td>
+            <center><img width="400" height="400" class="closest-img">
+                <div class="closest-label"></div>
+            </center>
+        </td>
+    </tr>
+    <tr>
+        <td>
+            <center><img width="400" height="400" class="closest-img">
+                <div class="closest-label"></div>
+            </center>
+        </td>
+        <td>
+            <center><img width="400" height="400" class="closest-img">
+                <div class="closest-label"></div>
+            </center>
+        </td>
+        <td>
+            <center><img width="400" height="400" class="closest-img">
+                <div class="closest-label"></div>
+            </center>
+        </td>
+    </tr>
+    </table>
+</body>
+
+</html>

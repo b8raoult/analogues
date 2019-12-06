@@ -1,0 +1,10 @@
+set -eaux
+here=$(dirname $0)
+cd $here
+here=$(/bin/pwd)
+home=$(dirname $here)
+echo $home
+export PYTHONPATH=$home/lib
+export FLASK_DEBUG=1
+export FLASK_ENVIRONMENT=development
+python3 analogui.py
